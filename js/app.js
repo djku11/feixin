@@ -1,7 +1,7 @@
 /* ==========================================================
    路由 + 通用工具
    ========================================================== */
-var S = { stack: [], tab: 'msg', ctx: {} };
+var S = { stack: [], tab: 'msgp', ctx: {} };
 
 var H = {
   esc: function (s) {
@@ -58,7 +58,7 @@ function replace(page, params) {
   S.stack[S.stack.length - 1] = { page: page, params: params || {} };
   render(true);
 }
-function home() { S.stack = [{ page: 'msg', params: {} }]; render(); }
+function home() { S.stack = [{ page: 'msgp', params: {} }]; render(); }
 function goto(tab) {
   S.stack = [{ page: tab, params: {} }]; S.tab = tab; render();
 }
@@ -93,11 +93,11 @@ function render(noAnim) {
 }
 
 var TABS = [
-  { id:'msg',   label:'消息',   svg:'<path d="M4 5h16v11H7l-3 3z"/>' },
+  { id:'msgp',  label:'个人消息', svg:'<path d="M4 5h16v11H7l-3 3z"/>' },
+  { id:'msgg',  label:'群聊消息', svg:'<path d="M3 5h12v9H7l-4 4z"/><path d="M17 8h4v9l-3-3h-3"/>' },
   { id:'contacts', label:'通讯录', svg:'<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M17 11.5a3 3 0 100-6M19 20c0-2.4-.9-4.2-2.3-5.4"/>' },
   { id:'tools', label:'功能',   svg:'<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>' },
-  { id:'plaza', label:'广场',   svg:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>' },
-  { id:'me',    label:'我',     svg:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.8 7.5-6.8s7.5 2.8 7.5 6.8"/>' }
+  { id:'me',    label:'个人',   svg:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c0-4 3.4-6.8 7.5-6.8s7.5 2.8 7.5 6.8"/>' }
 ];
 
 function renderTabs() {
@@ -107,13 +107,25 @@ function renderTabs() {
   var el = document.getElementById('tabbar');
   if (isChat) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
-  var un = Q.totalUnread();
+  /* 各 tab 的未读徽标：个人消息=好友未读；群聊消息=群未读；通讯录=陌生人未读 */
+  var badgeMap = {
+    msgp: sumUnread('p'),
+    msgg: sumUnread('g'),
+    contacts: Q.strangerUnread()
+  };
+  /* category（分组房间）按分组类型高亮来源 tab */
+  var catKind = null;
+  if (c.page === 'category' && c.params && c.params.id) {
+    var cc = Q.cat(c.params.id);
+    if (cc) catKind = cc.kind;
+  }
   var h = '';
   TABS.forEach(function (t) {
-    var on = (c.page === t.id) || (c.page === 'category' && t.id === 'msg');
+    var on = (c.page === t.id) ||
+             (catKind === 'p' && t.id === 'contacts') ||
+             (catKind === 'g' && t.id === 'msgg');
     var badge = '';
-    if (t.id === 'msg' && un) badge = '<div class="tb-b">' + un + '</div>';
-    if (t.id === 'plaza') badge = '<div class="tb-d"></div>';
+    if (badgeMap[t.id]) badge = '<div class="tb-b">' + (badgeMap[t.id] > 99 ? '99+' : badgeMap[t.id]) + '</div>';
     h += '<div class="tb' + (on ? ' on' : '') + '" data-tab="' + t.id + '">' +
          '<svg viewBox="0 0 24 24">' + t.svg + '</svg>' +
          '<div class="tb-l">' + t.label + '</div>' + badge + '</div>';

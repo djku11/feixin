@@ -1,5 +1,5 @@
 /* ==========================================================
-   界面 08-14 —— 功能 / 广场 / 朋友圈 / 我 / 设置 / 资料 / 分类管理
+   界面 08-14 —— 功能 / 我 / 设置 / 资料 / 分类管理
    + 17-20 整理未分类 · 归类选择器 · 拖拽归类 · 新建分类
    ========================================================== */
 
@@ -49,69 +49,7 @@ SCREENS.tools.after = function (root) {
   });
 };
 
-/* ---------- 09 广场 ---------- */
-SCREENS.plaza = function () {
-  var h = navBar('广场', { back:false,
-    right:'<div class="nav-r"><div class="nav-i"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div></div>' });
-  h += '<div class="body" style="background:var(--bg)">';
-  h += '<div class="hero" style="margin-top:12px"><div class="hero-t">朋友们的动态</div>' +
-    '<div class="hero-d">' + DB.data.moments.length + ' 位好友更新了状态，1 条新评论</div></div>';
-  var tiles = [
-    ['朋友圈','好友动态与相册','hobby','<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="#fff" fill-opacity=".3"/>'],
-    ['动态','短图文与话题','globe','<path d="M3 6h18v12H3z"/><path d="M7 10h10M7 14h6"/>'],
-    ['群组发现','按兴趣找群','work','<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M2.5 19c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5"/>'],
-    ['兴趣圈','设计 · 摄影 · 户外','star','<path d="M12 2l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z"/>'],
-    ['附近','周边的人与活动','family','<path d="M12 21s-7-4.6-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.4-7 10-7 10z"/>'],
-    ['视频号','好友在看的内容','school','<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="10" r="2.5"/><path d="M7 17c1-2 2.8-3 5-3s4 1 5 3"/>']
-  ];
-  h += '<div class="pgrid2">';
-  tiles.forEach(function (t) {
-    var ic = ICONS[t[2]];
-    h += '<div class="ptile" data-tile="' + t[0] + '"><div class="fic" style="background:' + ic.bg + '">' +
-      '<svg viewBox="0 0 24 24">' + ic.svg.replace(/fill="#fff" fill-opacity=".3"/g, 'fill="rgba(255,255,255,.35)"') + '</svg></div>' +
-      '<div class="pt-n">' + t[0] + '</div><div class="pt-d">' + t[1] + '</div></div>';
-  });
-  h += '</div><div style="height:20px"></div></div>';
-  return h;
-};
-SCREENS.plaza.after = function (root) {
-  root.querySelectorAll('[data-tile]').forEach(function (el) {
-    el.onclick = function () {
-      H.haptic();
-      if (el.dataset.tile === '朋友圈') go('moments');
-      else H.toast(el.dataset.tile + '：原型中为占位入口');
-    };
-  });
-};
-
-/* ---------- 10 朋友圈 ---------- */
-SCREENS.moments = function () {
-  var h = navBar('朋友圈', { right:'<div class="nav-r"><div class="nav-i"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.2"/></svg></div></div>' });
-  h += '<div class="body" style="background:#fff">';
-  DB.data.moments.forEach(function (m, i) {
-    var colors = [['#A8D8FF','#5B8FD6'],['#FFD9A8','#E8A04A'],['#C9E8B8','#5FA85F']];
-    h += '<div class="mo"><div class="mo-h"><div class="av sm" style="background:' + m.av + '">' +
-      H.esc(m.who.charAt(0)) + '</div><div><div class="mo-n">' + H.esc(m.who) + '</div>' +
-      '<div style="font-size:12px;color:#B2B2B2;margin-top:2px">' + H.esc(m.time) + '</div></div></div>' +
-      '<div class="mo-t">' + H.esc(m.t) + '</div>';
-    h += '<div class="mo-ims">';
-    for (var k = 0; k < 3; k++) {
-      var c = colors[(i + k) % 3];
-      h += '<div class="mo-im" style="background:linear-gradient(140deg,' + c[0] + ',' + c[1] + ')"></div>';
-    }
-    h += '</div>';
-    h += '<div class="mo-f"><span data-like="' + i + '">♥ ' + (m.likes.length || '赞') + '</span><span>💬 评论</span></div>';
-    if (m.cmts) h += '<div class="mo-c">' + H.esc(m.cmts) + '</div>';
-    h += '</div>';
-  });
-  h += '<div style="height:20px"></div></div>';
-  return h;
-};
-SCREENS.moments.after = function (root) {
-  root.querySelectorAll('[data-like]').forEach(function (el) {
-    el.onclick = function () { H.haptic(); H.toast('已点赞'); };
-  });
-};
+/* ---------- 09 广场及其全部功能（朋友圈/动态/群组发现/兴趣圈/附近/视频号）已按需求彻底移除 ---------- */
 
 /* ---------- 11 我 ---------- */
 SCREENS.me = function () {
@@ -180,15 +118,16 @@ SCREENS.groupset = function (p) {
     '<div style="font-size:11px;color:#888">添加</div></div>';
   h += '</div></div>';
 
-  /* 分类归属 —— 核心 */
-  h += '<div class="sec grey">分类归属<span>可多选，一个群可以进多个分类</span></div><div class="card" style="margin-top:0">';
-  DB.data.categories.forEach(function (c) {
-    var on = g.cats.indexOf(c.id) >= 0;
+  /* 分组归属 —— 核心（单分组，点选即移动） */
+  h += '<div class="sec grey">所属分组<span>点选即移动到该分组</span></div><div class="card" style="margin-top:0">';
+  Q.catList('g').forEach(function (c) {
+    var on = g.gid === c.id;
     h += '<div class="srow" data-gcat="' + c.id + '">' + H.catIcon(c.id, '', 32) +
       '<div class="sk" style="flex:1;min-width:0">' + H.esc(c.name) + '</div>' +
       '<div class="sw' + (on ? ' on' : '') + '"><i></i></div></div>';
   });
-  h += '<div class="srow" data-newcat style="color:#07C160"><div style="font-size:16px">+ 新建分类并归入</div></div>';
+  h += '<div class="srow" data-gout><div class="sk" style="flex:1;color:#888">移出分组（变为未分组）</div></div>';
+  h += '<div class="srow" data-newcat style="color:#07C160"><div style="font-size:16px">+ 新建群分组并移入</div></div>';
   h += '</div>';
 
   h += '<div class="sec grey">消息设置</div><div class="card" style="margin-top:0">' +
@@ -208,15 +147,21 @@ SCREENS.groupset.after = function (root, p) {
     el.onclick = function () {
       H.haptic();
       var cid = el.dataset.gcat;
-      var g = Q.group(p.id);
-      var on = g.cats.indexOf(cid) < 0;
-      A.toggleCat('group', p.id, cid, on);
-      el.querySelector('.sw').classList.toggle('on', on);
-      H.toast(on ? '已归入「' + Q.cat(cid).name + '」' : '已移出「' + Q.cat(cid).name + '」');
+      A.toggleCat('group', p.id, cid, true);
+      root.querySelectorAll('[data-gcat] .sw').forEach(function (sw) { sw.classList.remove('on'); });
+      el.querySelector('.sw').classList.add('on');
+      H.toast('已移动到「' + Q.cat(cid).name + '」');
     };
   });
+  var go_ = root.querySelector('[data-gout]');
+  if (go_) go_.onclick = function () {
+    H.haptic();
+    A.toggleCat('group', p.id, '', false);
+    root.querySelectorAll('[data-gcat] .sw').forEach(function (sw) { sw.classList.remove('on'); });
+    H.toast('已移出分组');
+  };
   var nc = root.querySelector('[data-newcat]');
-  if (nc) nc.onclick = function () { H.haptic(); go('newcat', { thenCats:'group:' + p.id }); };
+  if (nc) nc.onclick = function () { H.haptic(); go('newcat', { kind:'g', thenCats:'group:' + p.id }); };
   root.querySelectorAll('[data-tog]').forEach(function (el) {
     el.onclick = function () {
       H.haptic();
@@ -248,24 +193,22 @@ SCREENS.profile = function (p) {
   if (!isMe) h += '<div class="srow"><div class="sk">备注</div><div class="sv" data-editremark>' + H.esc(obj.remark || '点击设置') + '</div></div>';
   h += '</div>';
 
-  /* 分类归属 —— 核心 */
+  /* 分组归属 —— 核心（单分组） */
   var link = isMe ? 'me' : 'person';
-  h += '<div class="sec grey">分组与分类<span>一个人可以同时在多个分类</span></div><div class="card" style="margin-top:0">';
-  h += '<div class="srow"><div class="sk" style="flex:1">所属分类</div>' +
-    '<div class="sv" style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;max-width:60%">' +
-    (isMe ? '<span style="color:#B2B2B2;font-size:14px">自己的账号</span>' :
-      (obj.cats.length ? obj.cats.map(function (cid) {
-        var c = Q.cat(cid); if (!c) return '';
-        return '<span style="font-size:12px;padding:4px 11px;border-radius:99px;background:#07C160;color:#fff;font-weight:600">' + H.esc(c.name) + '</span>';
-      }).join('') : '<span style="color:#B2B2B2;font-size:14px">未分类</span>')) +
-    '</div></div>';
-  if (!isMe) {
-    DB.data.categories.forEach(function (c) {
-      var on = obj.cats.indexOf(c.id) >= 0;
+  h += '<div class="sec grey">所属分组<span>点选即移动到该分组</span></div><div class="card" style="margin-top:0">';
+  if (isMe) {
+    h += '<div class="srow"><div class="sk" style="flex:1">自己的账号</div>' +
+      '<div class="sv" style="color:#B2B2B2;font-size:14px">不需要分组</div></div>';
+  } else {
+    h += '<div class="srow"><div class="sk" style="flex:1">当前分组</div>' +
+      '<div class="sv">' + (obj.pgid && Q.cat(obj.pgid) ? H.esc(Q.cat(obj.pgid).name) : '未分组') + '</div></div>';
+    Q.catList('p').forEach(function (c) {
+      var on = obj.pgid === c.id;
       h += '<div class="srow" data-pcat="' + c.id + '">' + H.catIcon(c.id, '', 32) +
         '<div class="sk" style="flex:1;min-width:0">' + H.esc(c.name) + '</div>' +
         '<div class="sw' + (on ? ' on' : '') + '"><i></i></div></div>';
     });
+    h += '<div class="srow" data-pout><div class="sk" style="flex:1;color:#888">移出分组（变为未分组）</div></div>';
   }
   h += '</div>';
 
@@ -279,6 +222,9 @@ SCREENS.profile = function (p) {
       '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
       '<div class="srow" data-callper><div class="sk" style="flex:1">音视频通话</div>' +
       '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div></div>';
+    /* 黑名单 / 删除好友：拉黑可恢复，删除是彻底移除 */
+    h += '<div class="card"><div class="srow" data-blockper><div class="sk" style="flex:1;color:#E64340">加入黑名单</div></div>' +
+      '<div class="srow" data-delper><div class="sk" style="flex:1;color:#E64340">删除好友</div></div></div>';
   }
   h += '<div style="height:24px"></div></div>';
   return h;
@@ -289,13 +235,20 @@ SCREENS.profile.after = function (root, p) {
     el.onclick = function () {
       H.haptic();
       var cid = el.dataset.pcat;
-      var obj = Q.person(p.id);
-      var on = obj.cats.indexOf(cid) < 0;
-      A.toggleCat('person', p.id, cid, on);
-      el.querySelector('.sw').classList.toggle('on', on);
-      H.toast(on ? '已归入「' + Q.cat(cid).name + '」' : '已移出');
+      A.toggleCat('person', p.id, cid, true);
+      root.querySelectorAll('[data-pcat] .sw').forEach(function (sw) { sw.classList.remove('on'); });
+      el.querySelector('.sw').classList.add('on');
+      var cur = root.querySelector('.sv');
+      H.toast('已移动到「' + Q.cat(cid).name + '」');
     };
   });
+  var po = root.querySelector('[data-pout]');
+  if (po) po.onclick = function () {
+    H.haptic();
+    A.toggleCat('person', p.id, '', false);
+    root.querySelectorAll('[data-pcat] .sw').forEach(function (sw) { sw.classList.remove('on'); });
+    H.toast('已移出分组');
+  };
   var sm = root.querySelector('[data-sendmsg]');
   if (sm) sm.onclick = function () { H.haptic(); go('chat', { kind:'person', id:p.id }); };
   var cp = root.querySelector('[data-callper]');
@@ -316,43 +269,75 @@ SCREENS.profile.after = function (root, p) {
     if (v !== null) { Q.person(p.id).remark = v.trim(); DB.save(); render(true); H.toast('已保存'); }
   };
   var pm = root.querySelector('[data-pmore]');
-  if (pm) pm.onclick = function () { H.haptic(); H.toast('更多操作：设置备注 / 加入黑名单（原型占位）'); };
+  if (pm) pm.onclick = function () { H.haptic(); H.toast('更多操作（原型占位）'); };
+  /* 加入黑名单：收不到 Ta 的任何信息，可在通讯录黑名单里取消拉黑 */
+  var bp = root.querySelector('[data-blockper]');
+  if (bp) bp.onclick = function () {
+    H.haptic();
+    var o = Q.person(p.id);
+    if (!o) return;
+    if (confirm('把「' + o.name + '」加入黑名单？\n拉黑后不会收到 Ta 的任何信息，可随时取消拉黑。')) {
+      A.blockPerson(p.id);
+      H.toast('已加入黑名单，可在通讯录「黑名单」里管理');
+      back();
+      setTimeout(function () { render(true); }, 60);
+    }
+  };
+  /* 删除好友：彻底移除（与拉黑不同，不可在黑名单恢复） */
+  var dp = root.querySelector('[data-delper]');
+  if (dp) dp.onclick = function () {
+    H.haptic();
+    var o = Q.person(p.id);
+    if (!o) return;
+    if (confirm('删除好友「' + o.name + '」？\n聊天记录一并删除，不可恢复（拉黑不等于删除）。')) {
+      A.delPerson(p.id);
+      H.toast('已删除好友');
+      home();
+    }
+  };
 };
 
-/* ---------- 14 分类管理 ---------- */
+/* ---------- 14 分组管理 ---------- */
 SCREENS.catmanage = function () {
-  var h = navBar('管理分类', { right:'<div class="nav-r"><span class="nav-act" data-done>完成</span></div>' });
+  var h = navBar('管理分组', { right:'<div class="nav-r"><span class="nav-act" data-done>完成</span></div>' });
   h += '<div class="body" style="background:var(--bg)">';
-  h += '<div class="sec grey">我创建的分类<span>长按可拖动排序</span></div>';
+  h += '<div class="sec grey">好友分组<span>长按分组栏可拖动排序</span></div>';
   h += '<div class="card" style="margin-top:0" id="catList">';
-  DB.data.categories.forEach(function (c, i) {
+  Q.catList('p').forEach(function (c) {
     h += '<div class="frow" data-catedit="' + c.id + '">' +
       H.catIcon(c.id, '', 36) +
       '<div class="fn">' + H.esc(c.name) + '</div>' +
-      '<div class="fv">' + Q.groupsOf(c.id).length + ' 群 · ' + Q.peopleOf(c.id).length + ' 人</div>' +
+      '<div class="fv">' + Q.peopleOf(c.id).length + ' 人</div>' +
       '<div style="display:flex;gap:2px" onclick="event.stopPropagation()">' +
       '<div class="nav-i" data-up="' + c.id + '" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M6 15l6-6 6 6"/></svg></div>' +
       '<div class="nav-i" data-down="' + c.id + '" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '</div></div>';
   });
   h += '</div>';
-  h += '<div class="card"><div class="frow" style="justify-content:center;color:#07C160;font-size:15.5px" data-newcat>' +
-    '+ 新建分类</div></div>';
+  h += '<div class="card"><div class="frow" style="justify-content:center;color:#07C160;font-size:15.5px" data-newgrp="p">' +
+    '+ 新建好友分组</div></div>';
 
-  h += '<div class="sec grey">分类行为</div><div class="card" style="margin-top:0">';
-  var st = DB.data.settings;
-  [['showDirFirst','首屏显示分类目录'],['collapseOthers','其他分类折叠为一行'],
-   ['multiCat','一人可属多个分类'],['newToUncat','新好友先进「未分类」']].forEach(function (x) {
-    h += '<div class="srow" data-tog2="' + x[0] + '"><div class="sk" style="flex:1">' + x[1] + '</div>' +
-      '<div class="sw' + (st[x[0]] ? ' on' : '') + '"><i></i></div></div>';
+  h += '<div class="sec grey">群分组</div>';
+  h += '<div class="card" style="margin-top:0">';
+  Q.catList('g').forEach(function (c) {
+    h += '<div class="frow" data-catedit="' + c.id + '">' +
+      H.catIcon(c.id, '', 36) +
+      '<div class="fn">' + H.esc(c.name) + '</div>' +
+      '<div class="fv">' + Q.groupsOf(c.id).length + ' 群</div>' +
+      '<div style="display:flex;gap:2px" onclick="event.stopPropagation()">' +
+      '<div class="nav-i" data-up="' + c.id + '" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M6 15l6-6 6 6"/></svg></div>' +
+      '<div class="nav-i" data-down="' + c.id + '" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M6 9l6 6 6-6"/></svg></div>' +
+      '</div></div>';
   });
   h += '</div>';
+  h += '<div class="card"><div class="frow" style="justify-content:center;color:#07C160;font-size:15.5px" data-newgrp="g">' +
+    '+ 新建群分组</div></div>';
 
-  h += '<div class="sec grey">未分类</div><div class="card" style="margin-top:0">' +
-    '<div class="srow" data-go-tidy><div class="sk" style="flex:1">未分类的好友</div>' +
+  h += '<div class="sec grey">未分组</div><div class="card" style="margin-top:0">' +
+    '<div class="srow" data-go-tidy><div class="sk" style="flex:1">未分组的好友</div>' +
     '<div class="sv">' + Q.uncatPeople().length + ' 人</div>' +
     '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
-    '<div class="srow" data-go-tidy><div class="sk" style="flex:1">未分类的群</div>' +
+    '<div class="srow" data-go-tidy><div class="sk" style="flex:1">未分组的群</div>' +
     '<div class="sv">' + Q.uncatGroups().length + ' 个</div>' +
     '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
     '</div>';
@@ -373,16 +358,8 @@ SCREENS.catmanage.after = function (root) {
   root.querySelectorAll('[data-down]').forEach(function (el) {
     el.onclick = function () { H.haptic(); A.moveCat(el.dataset.down, 1); render(true); };
   });
-  root.querySelectorAll('[data-newcat]').forEach(function (el) {
-    el.onclick = function () { H.haptic(); go('newcat'); };
-  });
-  root.querySelectorAll('[data-tog2]').forEach(function (el) {
-    el.onclick = function () {
-      H.haptic();
-      var k = el.dataset.tog2;
-      DB.data.settings[k] = !DB.data.settings[k]; DB.save();
-      el.querySelector('.sw').classList.toggle('on', DB.data.settings[k]);
-    };
+  root.querySelectorAll('[data-newgrp]').forEach(function (el) {
+    el.onclick = function () { H.haptic(); go('newcat', { kind:el.dataset.newgrp }); };
   });
   root.querySelectorAll('[data-go-tidy]').forEach(function (el) {
     el.onclick = function () { H.haptic(); go('tidy'); };
@@ -393,11 +370,12 @@ SCREENS.catmanage.after = function (root) {
   };
 };
 
-/* ---------- 分类编辑 ---------- */
+/* ---------- 分组编辑 ---------- */
 SCREENS.catedit = function (p) {
   var c = Q.cat(p.id);
   if (!c) return '<div class="empty">不存在</div>';
-  var h = navBar('编辑分类', { right:'<div class="nav-r"><span class="nav-act" data-save>保存</span></div>' });
+  var isG = c.kind === 'g';
+  var h = navBar('编辑分组', { right:'<div class="nav-r"><span class="nav-act" data-save>保存</span></div>' });
   h += '<div class="body" style="background:var(--bg)">';
   h += '<div class="sec grey">名称</div><div class="card" style="margin-top:0">' +
     '<div class="srow"><input id="catNm" value="' + H.esc(c.name) + '" style="flex:1;border:none;outline:none;font-size:17px;font-family:inherit;background:transparent">' +
@@ -412,41 +390,24 @@ SCREENS.catedit = function (p) {
       '<svg viewBox="0 0 24 24" style="width:23px;height:23px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round">' + ICONS[k].svg + '</svg></div>';
   });
   h += '</div></div>';
-  h += '<div class="sec grey">行为</div><div class="card" style="margin-top:0">' +
-    '<div class="srow" data-tp="pinned"><div class="sk" style="flex:1">置顶到目录顶部</div><div class="sw' + (c.pinned ? ' on' : '') + '"><i></i></div></div>' +
-    '<div class="srow" data-tp="notify"><div class="sk" style="flex:1">有新消息时提醒我</div><div class="sw' + (c.notify ? ' on' : '') + '"><i></i></div></div>' +
-    '</div>';
   h += '<div class="sec grey">内容</div><div class="card" style="margin-top:0">' +
-    '<div class="srow"><div class="sk">群聊</div><div class="sv">' + Q.groupsOf(c.id).length + ' 个</div></div>' +
-    '<div class="srow"><div class="sk">好友</div><div class="sv">' + Q.peopleOf(c.id).length + ' 人</div></div>' +
+    '<div class="srow"><div class="sk">' + (isG ? '群聊' : '好友') + '</div><div class="sv">' + Q.catTotal(c.id) + ' ' + (isG ? '个' : '人') + '</div></div>' +
     '</div>';
-  h += '<div class="card"><div class="srow" style="justify-content:center;color:#FA5151;font-size:16px" data-delcat>删除分类</div></div>';
+  h += '<div class="card"><div class="srow" style="justify-content:center;color:#FA5151;font-size:16px" data-delcat>删除分组</div></div>';
   h += '<div style="font-size:12.5px;color:var(--lb3);padding:12px 20px 0;line-height:1.65">' +
-    '删除分类不会删掉人和群，它们会回到「未分类」。</div>';
+    '删除分组不会删掉' + (isG ? '群' : '好友') + '，它们会回到「未分组」。</div>';
   h += '<div style="height:24px"></div></div>';
   return h;
 };
 SCREENS.catedit.after = function (root, p) {
   var c = Q.cat(p.id);
-  var picked = c.icon;
-  root.querySelectorAll('[data-icon]').forEach(function (el) {
-    el.onclick = function () { H.haptic(); picked = el.dataset.icon; render(true); };
-  });
-  /* 重渲染后 picked 丢失，这里用 DOM 状态兜底：先记录到临时变量 */
+  var picked = c.icon || 'people';
   if (window._catIconTmp && window._catIconTmp.id === p.id) { picked = window._catIconTmp.icon; }
   root.querySelectorAll('[data-icon]').forEach(function (el) {
     el.onclick = function () {
       H.haptic();
       window._catIconTmp = { id:p.id, icon:el.dataset.icon };
       render(true);
-    };
-  });
-  root.querySelectorAll('[data-tp]').forEach(function (el) {
-    el.onclick = function () {
-      H.haptic();
-      var k = el.dataset.tp;
-      c[k] = !c[k]; DB.save();
-      el.querySelector('.sw').classList.toggle('on', c[k]);
     };
   });
   var inp = root.querySelector('#catNm');
@@ -460,24 +421,24 @@ SCREENS.catedit.after = function (root, p) {
   };
   root.querySelector('[data-delcat]').onclick = function () {
     H.haptic();
-    if (confirm('删除分类「' + c.name + '」？人和群会回到未分类。')) {
-      A.delCat(p.id); back(); H.toast('已删除');
+    if (confirm('删除分组「' + c.name + '」？内容会回到未分组。')) {
+      A.delCat(p.id); home(); H.toast('已删除');
     }
   };
 };
 
-/* ---------- 分类更多操作 ---------- */
+/* ---------- 分组更多操作 ---------- */
 SCREENS.catmenu = function (p) {
   var c = Q.cat(p.id);
-  var h = navBar('分类操作', { right:'<div class="nav-r"></div>' });
+  var isG = c.kind === 'g';
+  var h = navBar('分组操作', { right:'<div class="nav-r"></div>' });
   h += '<div class="body" style="background:var(--bg);padding-top:12px">';
   h += '<div class="card" style="margin-top:0">' +
-    '<div class="srow" data-m="edit"><div class="sk" style="flex:1">编辑分类名称与图标</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
-    '<div class="srow" data-m="pin"><div class="sk" style="flex:1">' + (c.pinned ? '取消置顶' : '置顶到目录顶部') + '</div></div>' +
-    '<div class="srow" data-m="add"><div class="sk" style="flex:1">添加好友 / 群到这个分类</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
-    '<div class="srow" data-m="manage"><div class="sk" style="flex:1">管理全部分类</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
+    '<div class="srow" data-m="edit"><div class="sk" style="flex:1">编辑分组名称与图标</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
+    '<div class="srow" data-m="add"><div class="sk" style="flex:1">添加' + (isG ? '群' : '好友') + '到这个分组</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
+    '<div class="srow" data-m="manage"><div class="sk" style="flex:1">管理全部分组</div><svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
     '</div>';
-  h += '<div class="card"><div class="srow" style="justify-content:center;color:#FA5151;font-size:16px" data-m="del">删除分类</div></div>';
+  h += '<div class="card"><div class="srow" style="justify-content:center;color:#FA5151;font-size:16px" data-m="del">删除分组</div></div>';
   h += '<div style="height:24px"></div></div>';
   return h;
 };
@@ -488,11 +449,10 @@ SCREENS.catmenu.after = function (root, p) {
       H.haptic();
       var m = el.dataset.m;
       if (m === 'edit') go('catedit', { id:p.id });
-      else if (m === 'pin') { c.pinned = !c.pinned; DB.save(); back(); H.toast(c.pinned ? '已置顶' : '已取消置顶'); }
-      else if (m === 'add') go('tidy', { addTo:p.id });
+      else if (m === 'add') go('tidy', { addTo:p.id, kind:c.kind });
       else if (m === 'manage') go('catmanage');
       else if (m === 'del') {
-        if (confirm('删除分类「' + c.name + '」？')) { A.delCat(p.id); home(); H.toast('已删除'); }
+        if (confirm('删除分组「' + c.name + '」？')) { A.delCat(p.id); home(); H.toast('已删除'); }
       }
     };
   });
@@ -504,10 +464,10 @@ SCREENS.settings = function () {
   var st = DB.data.settings;
   h += '<div class="body" style="background:var(--bg);padding-top:12px">';
   h += '<div class="card" style="margin-top:0">' +
-    '<div class="srow" data-go="catmanage"><div class="sk" style="flex:1">管理分类</div>' +
+    '<div class="srow" data-go="catmanage"><div class="sk" style="flex:1">管理分组</div>' +
     '<div class="sv">' + DB.data.categories.length + ' 个</div>' +
     '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
-    '<div class="srow" data-go="tidy"><div class="sk" style="flex:1">整理未分类</div>' +
+    '<div class="srow" data-go="tidy"><div class="sk" style="flex:1">整理未分组</div>' +
     '<div class="sv">' + Q.uncatCount() + ' 项</div>' +
     '<svg class="arw" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 5l7 7-7 7"/></svg></div>' +
     '</div>';
@@ -529,7 +489,7 @@ SCREENS.settings.after = function (root) {
     };
   });
   root.querySelectorAll('.srow').forEach(function (el) {
-    if (!el.dataset.go) el.onclick = function () { H.toast('原型中为占位入口'); };
+    if (el.dataset.go === undefined) el.onclick = function () { H.toast('原型中为占位入口'); };
   });
 };
 

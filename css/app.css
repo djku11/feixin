@@ -389,3 +389,162 @@ html,body{height:100%;overflow:hidden;background:#E9EBED;
 /* 分组管理拖动手柄 */
 .handle{width:17px;height:17px;stroke:#C8C8C8;fill:none;stroke-width:2.2;
   stroke-linecap:round;flex:none}
+
+/* ==========================================================
+   10. QQ 式消息页（个人消息 / 群聊消息 双 tab 体系）
+   ========================================================== */
+
+/* 通讯录：陌生人行标签 + 同意小按钮 + 排序切换 */
+.stag{display:inline-block;margin-left:7px;padding:1.5px 6px;border-radius:5px;
+  background:rgba(7,193,96,.1);color:#07C160;font-size:10.5px;font-weight:500;
+  font-style:normal;vertical-align:1.5px}
+.stag.grey2{background:#F2F3F4;color:#9AA0A6}
+.mini-btn{flex:none;padding:6px 13px;border-radius:7px;background:#07C160;color:#fff;
+  font-size:13px;font-weight:500;cursor:pointer;position:relative;z-index:3}
+.mini-btn:active{background:#059E4E}
+.sort-btn{display:inline-flex;align-items:center;gap:1px;color:#576B95;font-size:12.5px;
+  cursor:pointer;margin-left:10px;font-weight:400}
+.sort-btn svg{width:12px;height:12px;stroke:#576B95;fill:none;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* 区块头：个人消息 / 群聊 */
+.zone-h{display:flex;align-items:baseline;gap:8px;padding:15px 16px 7px}
+.zone-t{font-size:16px;font-weight:650;letter-spacing:-.01em}
+.zone-s{font-size:12px;color:var(--lb3)}
+
+/* QQ 式折叠分组 */
+.grp{background:#fff}
+.grp-h{display:flex;align-items:center;gap:7px;padding:11px 16px;cursor:pointer;
+  position:relative;transition:background .12s;user-select:none;-webkit-user-select:none}
+.grp-h:active{background:#F2F3F4}
+.tri{width:15px;height:15px;flex:none;stroke:var(--lb2);fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .2s var(--ease)}
+.grp.fold .tri{transform:rotate(-90deg)}
+.grp-n{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.grp-badge{min-width:17px;height:17px;border-radius:99px;background:var(--red);
+  color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;
+  justify-content:center;padding:0 4.5px;flex:none}
+.grp-cnt{margin-left:auto;font-size:12.5px;color:var(--lb3);flex:none;
+  font-variant-numeric:tabular-nums}
+.grp-b{overflow:hidden;max-height:4000px;opacity:1;
+  transition:max-height .26s var(--ease),opacity .2s}
+.grp.fold .grp-b{max-height:0;opacity:0}
+.grp-empty{padding:2px 16px 13px 38px;font-size:12.5px;color:var(--lb3);line-height:1.6}
+
+/* 来消息了 → 分组标题栏闪烁（用户点名效果） */
+@keyframes grpblink{0%,100%{background:transparent}50%{background:rgba(250,81,81,.12)}}
+.grp.has-unread .grp-h{animation:grpblink 1.1s ease-in-out infinite}
+
+/* 分组长按拖拽中 */
+.grp-dragging{opacity:.32}
+.grp-h.ghost-bar{position:fixed;z-index:999;pointer-events:none;margin:0;
+  background:#fff;border-radius:10px;
+  box-shadow:0 14px 38px rgba(0,0,0,.24),0 2px 8px rgba(0,0,0,.1)}
+
+/* 好友/群行（frow2，缩进体现层级） */
+.frow2{display:flex;align-items:center;gap:13px;padding:10px 16px 10px 27px;
+  background:#fff;cursor:pointer;position:relative;transition:background .12s}
+.frow2:active{background:#F2F3F4}
+.frow2::after{content:"";position:absolute;left:85px;right:0;bottom:0;
+  height:1px;background:var(--sep)}
+.grp-b .frow2:last-child::after{display:none}
+.row-dragging{opacity:.3}
+
+/* 头像 + 右下角在线点 */
+.fav{width:45px;height:45px;border-radius:7px;flex:none;display:flex;align-items:center;
+  justify-content:center;color:#fff;font-size:18px;font-weight:500;position:relative}
+.av{position:relative}
+.odot{width:10px;height:10px;border-radius:50%;border:2px solid #fff;position:absolute;
+  right:-2px;bottom:-2px;background:#B8BFC7}
+.odot.big{width:13px;height:13px;border-width:2.5px}
+.odot.on{background:#10D876}
+.odot.off{background:#B8BFC7}
+
+/* 在线状态文字 + 个性签名 */
+.ost{font-size:12px;font-style:normal}
+.ost.on{color:#10D876}
+.ost.off{color:var(--lb3)}
+.sub-sep{display:inline-block;width:1px;height:10px;background:#DDD;
+  margin:0 7px;vertical-align:-1px}
+
+/* 新建分组按钮 */
+.addgrp{margin:10px 16px 0;padding:12px;text-align:center;color:var(--brand);
+  font-size:14.5px;font-weight:500;background:#fff;border-radius:var(--r);cursor:pointer}
+.addgrp:active{background:#F5FBF7}
+
+/* ==========================================================
+   11. 交互增强通用样式（与 native.css 9.x 保持同步，
+      保证普通浏览器 / 电脑预览同样生效）
+   ========================================================== */
+.cat-ghost{position:fixed;z-index:999;pointer-events:none;border-radius:12px;
+  background:#fff;box-shadow:0 14px 38px rgba(0,0,0,.24),0 2px 8px rgba(0,0,0,.1);
+  transform-origin:center;opacity:.97;margin:0 !important}
+body.cat-sorting,body.cat-sorting .body{overflow:hidden !important}
+.sort-tip{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%) translateY(8px);background:rgba(0,0,0,.82);color:#fff;
+  font-size:13px;padding:8px 16px;border-radius:99px;z-index:998;opacity:0;
+  transition:opacity .18s,transform .18s;pointer-events:none;white-space:nowrap}
+.sort-tip.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 左滑行管理 */
+.swipe-row{position:relative;overflow:hidden;background:#fff}
+.swipe-row .swipe-in{position:relative;z-index:2;background:#fff;
+  transition:transform .24s cubic-bezier(.32,.72,0,1);will-change:transform}
+.swipe-act{position:absolute;top:0;right:0;bottom:0;z-index:1;display:flex;
+  align-items:stretch}
+.swipe-act .sa{width:76px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;color:#fff;font-size:12.5px;cursor:pointer}
+.swipe-act .sa svg{width:21px;height:21px;stroke:#fff;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.swipe-act .sa.del{background:#FA5151}
+.swipe-act .sa.edit{background:#576B95}
+.swipe-act .sa.move{background:#F5A623}
+.swipe-act .sa.add{background:#07C160}
+.swipe-act .sa.block{background:#6B7280}
+.swipe-act .sa.unblock{background:#10B981}
+
+/* 编辑面板 */
+.edit-wrap{padding:16px 16px 8px}
+.edit-lab{font-size:13px;color:#888;margin:0 4px 7px}
+.edit-in{width:100%;border:none;outline:none;background:#F5F5F5;border-radius:9px;
+  padding:12px 13px;font-size:16px;font-family:inherit;color:#191919;
+  -webkit-appearance:none}
+.edit-in:focus{background:#EFEFEF}
+.edit-save{margin:18px 16px 0;height:46px;border-radius:9px;background:#07C160;
+  color:#fff;font-size:16.5px;font-weight:500;display:flex;align-items:center;
+  justify-content:center;cursor:pointer}
+.edit-save:active{background:#059E4E}
+.edit-tip{font-size:12px;color:#B2B2B2;margin:12px 20px;line-height:1.6}
+
+/* ==========================================================
+   12. 真·图片与定位（media.js 配套）
+   ========================================================== */
+/* 聊天里的图片气泡 */
+.bub-imgw{padding:0;background:transparent;overflow:hidden;border-radius:12px;
+  max-width:64%;line-height:0;cursor:pointer}
+.bub-img{display:block;max-width:100%;max-height:230px;border-radius:12px;
+  background:#EEF0F2;min-width:60px;min-height:60px}
+/* 全屏看大图 */
+.c-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;
+  display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+.c-lightbox img{max-width:94vw;max-height:92vh;border-radius:6px}
+/* 位置卡片 */
+.geo-bub{background:transparent;padding:0}
+.geo-card{width:216px;border-radius:12px;overflow:hidden;background:#fff;
+  cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.12)}
+.geo-map{position:relative;height:118px;overflow:hidden;background:#E4E8EB}
+.geo-inner{position:absolute;width:768px;height:768px;will-change:transform}
+.geo-tile{position:absolute;width:256px;height:256px;opacity:0;transition:opacity .35s}
+.geo-tile.ld{opacity:1}
+.geo-pin{position:absolute;left:50%;top:50%;width:22px;height:22px;
+  margin:-21px 0 0 -11px;z-index:3;pointer-events:none}
+.geo-pin::before{content:"";position:absolute;inset:0;background:#FA5151;
+  border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+  box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.geo-pin::after{content:"";position:absolute;left:7px;top:7px;width:8px;height:8px;
+  background:#fff;border-radius:50%}
+.geo-meta{display:flex;flex-direction:column;gap:1px;padding:8px 11px;background:#fff;
+  border-top:1px solid var(--sep)}
+.geo-meta b{font-size:13.5px;color:var(--lb)}
+.geo-meta span{font-size:11.5px;color:var(--lb3);font-variant-numeric:tabular-nums}

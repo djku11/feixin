@@ -1,16 +1,19 @@
 /* 微聊 · Service Worker
    策略：应用外壳（HTML/CSS/JS/图标）预缓存，离线可用；
         网络请求走「缓存优先，后台更新」，保证秒开。 */
-var CACHE = 'weiliao-v1';
+var CACHE = 'weiliao-v7';
 var ASSETS = [
   './',
   './index.html',
   './css/app.css',
+  './css/native.css',
   './js/store.js',
+  './js/media.js',
   './js/screens1.js',
   './js/screens2.js',
   './js/screens3.js',
   './js/app.js',
+  './js/enhance.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'

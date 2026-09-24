@@ -7,6 +7,11 @@
 /* 1. 去掉电脑上那层假手机壳 —— 真机就是屏幕本身 */
 html, body { height: 100%; }
 #app { display: block; height: 100%; width: 100%; }
+/* 安全区兜底：老设备/非 PWA 环境 env() 返回 0，iOS 独立窗口才有真实值 */
+:root {
+  --sat: env(safe-area-inset-top, 20px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
 .phone {
   width: 100%; height: 100%;
   border: 0; border-radius: 0; box-shadow: none;
@@ -18,20 +23,27 @@ html, body { height: 100%; }
 /* 2. 隐藏顶部那条假状态栏 —— 真机系统自己会画 */
 .statusbar { display: none; }
 
-/* 3. 视图容器铺满，并让出安全区 */
+/* 3. 视图容器铺满，并让出安全区
+   注意：用 max() 取「系统安全区」与「最小 44px」的较大值。
+   原因：iOS 独立窗口 env() 有真实值(~59px)，而部分安卓/鸿蒙环境 env() 返回 0，
+        此时仍有 44px 留白，保证返回按钮永远不被状态栏压住。 */
 .view { flex: 1 1 auto; position: relative; }
 .nav {
-  padding-top: env(safe-area-inset-top, 0px);
-  height: calc(46px + env(safe-area-inset-top, 0px));
+  padding-top: max(env(safe-area-inset-top), 44px);
+  height: calc(46px + max(env(safe-area-inset-top), 44px));
 }
+.nav-l, .nav-r { top: max(env(safe-area-inset-top), 44px); height: 46px; }
+/* 返回按钮点击热区放大，手指更好点中 */
+.nav-i { width: 38px; height: 38px; margin-left: -6px; }
+.nav-i svg { width: 24px; height: 24px; }
 #tabbar {
   flex: none;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  height: calc(52px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  height: calc(52px + max(env(safe-area-inset-bottom), 8px));
 }
 /* 输入框、底部操作条同理 */
 .ibar, .abar, .sheet {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  padding-bottom: calc(max(env(safe-area-inset-bottom), 8px) + 8px);
 }
 
 /* 4. 全局禁止长按选中/系统菜单 —— 否则长按拖拽归类会被系统弹窗打断 */
@@ -56,6 +68,88 @@ body { background: var(--bg); }
 
 /* 7. 真机上让滚动更顺滑 */
 .body, .page { -webkit-overflow-scrolling: touch; }
+
+/* ==========================================================
+   9. 交互增强（真机专属）
+   ========================================================== */
+
+/* ---------- 9.1 分类拖拽排序 ---------- */
+/* 长按浮起的「幽灵卡片」 */
+.cat-ghost {
+  position: fixed; z-index: 999; pointer-events: none;
+  border-radius: 12px; background: #fff;
+  box-shadow: 0 14px 38px rgba(0,0,0,.24), 0 2px 8px rgba(0,0,0,.1);
+  transform-origin: center; opacity: .97;
+  margin: 0 !important;
+}
+/* 被拖起来的卡片原位留个空位 */
+.cat.dragging { opacity: .28; }
+/* 拖动过程中禁止页面滚动，否则会跟手势打架 */
+body.cat-sorting, body.cat-sorting .body { overflow: hidden !important; }
+/* 排序提示条 */
+.sort-tip {
+  position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(0,0,0,.82); color: #fff; font-size: 13px;
+  padding: 8px 16px; border-radius: 99px; z-index: 998;
+  opacity: 0; transition: opacity .18s, transform .18s; pointer-events: none;
+  white-space: nowrap;
+}
+.sort-tip.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 9.2 人物/群 管理（左滑删除 + 编辑） ---------- */
+/* 行容器：可横向滑动 */
+.swipe-row { position: relative; overflow: hidden; background: #fff; }
+.swipe-row .swipe-in {
+  position: relative; z-index: 2; background: #fff;
+  transition: transform .24s cubic-bezier(.32,.72,0,1); will-change: transform;
+}
+/* 右侧滑出的操作按钮 */
+.swipe-act {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 1;
+  display: flex; align-items: stretch;
+}
+.swipe-act .sa {
+  width: 76px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: #fff; font-size: 12.5px;
+  cursor: pointer;
+}
+.swipe-act .sa svg { width: 21px; height: 21px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.swipe-act .sa.del  { background: #FA5151; }
+.swipe-act .sa.edit { background: #576B95; }
+.swipe-act .sa.move { background: #F5A623; }
+.swipe-act .sa.add  { background: #07C160; }
+.swipe-act .sa.block { background: #6B7280; }
+.swipe-act .sa.unblock { background: #10B981; }
+
+/* 人物管理行 */
+.prow { display: flex; align-items: center; gap: 13px; padding: 12px 16px; background: #fff; }
+.prow .pav { width: 42px; height: 42px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; font-weight: 500; }
+.prow .pmid { flex: 1; min-width: 0; }
+.prow .pnm { font-size: 16px; }
+.prow .prm { font-size: 12.5px; color: #B2B2B2; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .pcats { font-size: 11.5px; color: #07C160; margin-top: 3px; }
+.prow .pmove { width: 30px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.prow .pmove svg { width: 19px; height: 19px; stroke: #C8C8C8; fill: none; stroke-width: 2; stroke-linecap: round; }
+.prow:active .pmove svg { stroke: #07C160; }
+
+/* ---------- 9.3 编辑面板（改名/改备注） ---------- */
+.edit-wrap { padding: 16px 16px 8px; }
+.edit-lab { font-size: 13px; color: #888; margin: 0 4px 7px; }
+.edit-in {
+  width: 100%; border: none; outline: none; background: #F5F5F5;
+  border-radius: 9px; padding: 12px 13px; font-size: 16px;
+  font-family: inherit; color: #191919; -webkit-appearance: none;
+}
+.edit-in:focus { background: #EFEFEF; }
+.edit-save {
+  margin: 18px 16px 0; height: 46px; border-radius: 9px;
+  background: #07C160; color: #fff; font-size: 16.5px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.edit-save:active { background: #059E4E; }
+.edit-save.dis { background: #E5E5E5; color: #B2B2B2; }
+.edit-tip { font-size: 12px; color: #B2B2B2; margin: 12px 20px; line-height: 1.6; }
 
 /* 8. 深浅色：跟随系统状态栏文字颜色 */
 @media (prefers-color-scheme: dark) {
