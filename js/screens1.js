@@ -61,13 +61,16 @@ function sumUnread(kind) {
 
 /* ---------- 两个消息屏共用的交互绑定 ---------- */
 function bindMsgScreen(root) {
-  /* 分组：点击标题 → 折叠/展开；未分组 → 进对应体系的整理页 */
+  /* 分组：点击标题 → 折叠/展开（未分组与普通分组行为一致；进整理页入口在通讯录里） */
   root.querySelectorAll('.grp').forEach(function (gEl) {
     var gid = gEl.dataset.grp;
     gEl.querySelector('.grp-h').onclick = function () {
       H.haptic();
       if (gid === '__up' || gid === '__ug') {
-        go('tidy', { kind: gid === '__up' ? 'p' : 'g' });
+        var k = gid === '__up' ? 'up' : 'ug';
+        DB.data.settings[k + 'Folded'] = !DB.data.settings[k + 'Folded'];
+        DB.save();
+        gEl.classList.toggle('fold', DB.data.settings[k + 'Folded']);
         return;
       }
       var c = Q.cat(gid);
@@ -137,7 +140,8 @@ SCREENS.msgp = function () {
   /* 未分组好友（只属于个人消息体系） */
   var ups = Q.uncatPeople();
   if (ups.length || d.miscUncat > 0) {
-    h += '<div class="grp" data-grp="__up" data-kind="p">' +
+    var upFold = DB.data.settings.upFolded ? ' fold' : '';
+    h += '<div class="grp' + upFold + '" data-grp="__up" data-kind="p">' +
       '<div class="grp-h">' +
       '<svg class="tri" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>' +
       '<span class="grp-n" style="color:#888">未分组好友</span>' +
@@ -192,7 +196,8 @@ SCREENS.msgg = function () {
   /* 未分组群聊（只属于群聊体系） */
   var ugs = Q.uncatGroups();
   if (ugs.length) {
-    h += '<div class="grp" data-grp="__ug" data-kind="g">' +
+    var ugFold = DB.data.settings.ugFolded ? ' fold' : '';
+    h += '<div class="grp' + ugFold + '" data-grp="__ug" data-kind="g">' +
       '<div class="grp-h">' +
       '<svg class="tri" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>' +
       '<span class="grp-n" style="color:#888">未分组群聊</span>' +

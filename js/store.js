@@ -139,7 +139,8 @@ function seed() {
     miscUncat: 21,   /* 未分组占位数量感 */
 
     settings: { showDirFirst:true, collapseOthers:true, multiCat:false, newToUncat:true,
-                msgMute:false, pinChat:true, saveContacts:true, msgTab:'p', contactSort:'pinyin' }
+                msgMute:false, pinChat:true, saveContacts:true, msgTab:'p', contactSort:'pinyin',
+                upFolded:false, ugFolded:false }
   };
 }
 
@@ -157,6 +158,8 @@ var DB = {
     if (!this.data.strangers) this.data.strangers = seed().strangers;
     if (!this.data.settings) this.data.settings = seed().settings;
     if (this.data.settings.contactSort === undefined) this.data.settings.contactSort = 'pinyin';
+    if (this.data.settings.upFolded === undefined) this.data.settings.upFolded = false;
+    if (this.data.settings.ugFolded === undefined) this.data.settings.ugFolded = false;
     this.save();
     return this.data;
   },
