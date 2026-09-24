@@ -215,7 +215,8 @@
       ], {
         edit: function () { go('editedit', { kind: isG ? 'group' : 'person', id: id }); },
         move: function () {
-          go('quickassign', { kind: isG ? 'group' : 'person', id: id, name: o.name });
+          go('quickassign', { kind: isG ? 'group' : 'person', id: id, name: o.name,
+            scope: isG ? undefined : 'msgp' });
         },
         del: function () {
           if (confirm('删除' + (isG ? '群聊「' : '好友「') + o.name + '」？\n聊天记录也会一并删除。')) {
