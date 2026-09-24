@@ -54,24 +54,43 @@ SCREENS.contacts = function () {
   }
 
   /* ===== 二、好友类 ===== */
+  var sortBy = d.settings.contactSort === 'recent' ? 'recent' : 'pinyin';
   var friends = Q.friends();
-  h += '<div class="sec">好友<span>' + Q.totalOnline() + '/' + friends.length + ' 人在线</span></div>';
+  h += '<div class="sec">好友<span>' + Q.totalOnline() + '/' + friends.length + ' 人在线</span>' +
+    '<span class="sort-btn" data-sort>' + (sortBy === 'pinyin' ? '按拼音排序' : '按最近联系') +
+    '<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></span></div>';
 
-  Q.catList('p', 'contacts').forEach(function (c) {
+  Q.catList('p').forEach(function (c) {
     h += '<div class="row" data-c="' + c.id + '">' + H.catIcon(c.id, '', 44) +
       '<div class="mid"><div class="nm">' + H.esc(c.name) + '</div>' +
       '<div class="pv">' + Q.peopleOf(c.id).length + ' 人 · ' + Q.onlineCount(c.id) + ' 人在线</div></div>' +
       '<svg class="arw" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>';
   });
-  if (!DB.data.categories.some(function (c) { return c.kind === 'p' && c.scope === 'contacts'; })) {
-    h += '<div style="font-size:12.5px;color:#B2B2B2;padding:6px 18px 12px;line-height:1.6">' +
-      '还没有分组。点右上角「+」新建分组，再从「未分组好友」里把好友拉进去分类。</div>';
-  }
-  var uc = Q.uncatPeople('contacts').length;
+  var uc = Q.uncatPeople().length;
   h += '<div class="row" data-c="__up">' +
     '<div class="av" style="background:' + AV.grey + '"><svg viewBox="0 0 24 24" style="width:23px;height:23px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round"><path d="M4 5h16v11H7l-3 3z"/></svg></div>' +
     '<div class="mid"><div class="nm">未分组好友</div><div class="pv">' + uc + ' 人待分组</div></div>' +
     '<div class="badge" style="background:#B8BFC7">' + uc + '</div></div>';
+
+  /* 全部好友（排序：pinyin=拼音 / recent=通讯录原始顺序=最近联系） */
+  h += '<div class="sec grey">全部好友<span>' + friends.length + ' 人</span></div>';
+  var last = '';
+  var sorted = friends.slice();
+  if (sortBy === 'pinyin') {
+    sorted.sort(function (a, b) { return a.name.localeCompare(b.name, 'zh'); });
+  }
+  sorted.forEach(function (p) {
+    if (sortBy === 'pinyin') {
+      var ix = pinyinIdx(p.name);
+      if (ix !== last) { h += '<div class="idxh">' + ix + '</div>'; last = ix; }
+    }
+    h += '<div class="row noline" data-p="' + p.id + '">' +
+      '<div class="av" style="background:' + p.av + '">' + H.esc(p.name.charAt(0)) +
+      '<span class="odot big' + (Q.isOnline(p) ? ' on' : ' off') + '" style="position:absolute;margin:26px 0 0 26px"></span></div>' +
+      '<div class="mid"><div class="nm">' + H.esc(p.name) + '</div>' +
+      '<div class="pv"><span class="ost ' + (Q.isOnline(p) ? 'on' : 'off') + '">' + Q.onlineTxt(p) + '</span>' +
+      (p.mood ? '<i class="sub-sep"></i>' + H.esc(p.mood) : '') + '</div></div></div>';
+  });
 
   /* ===== 三、拉黑类 ===== */
   var bs = Q.blocked();
@@ -108,16 +127,30 @@ SCREENS.contacts.after = function (root) {
     el.onclick = function () {
       H.haptic();
       var id = el.dataset.c;
-      if (id === '__up') go('tidy', { kind:'p', scope:'contacts' });
+      if (id === '__up') go('tidy', { kind:'p' });
       else go('category', { id:id });
     };
   });
-  var nc = root.querySelector('[data-newgrp]');
-  if (nc) nc.onclick = function () { H.haptic(); go('newcat', { kind:'p', scope:'contacts' }); };
+  /* 好友 → 资料页 */
+  root.querySelectorAll('[data-p]').forEach(function (el) {
+    el.onclick = function () { H.haptic(); go('profile', { id:el.dataset.p, kind:'person' }); };
+  });
   /* 拉黑 → 拉黑详情（取消拉黑） */
   root.querySelectorAll('[data-b]').forEach(function (el) {
     el.onclick = function () { H.haptic(); go('blockedinfo', { id:el.dataset.b }); };
   });
+  /* 排序切换 */
+  var sb = root.querySelector('[data-sort]');
+  if (sb) sb.onclick = function (e) {
+    e.stopPropagation();
+    H.haptic();
+    var d = DB.data;
+    d.settings.contactSort = d.settings.contactSort === 'pinyin' ? 'recent' : 'pinyin';
+    DB.save();
+    render(true);
+  };
+  var nc = root.querySelector('[data-newgrp]');
+  if (nc) nc.onclick = function () { H.haptic(); go('newcat', { kind:'p' }); };
 };
 
 /* ---------- 拉黑详情：只能取消拉黑（恢复），不能删除 ---------- */
@@ -161,10 +194,8 @@ SCREENS.tidy = function (p) {
   if (p.reset) TIDY.sel = {};
   /* kind: 'p' 只整理未分组好友 / 'g' 只整理未分组群聊 / 空 = 全部（设置页入口） */
   var kind = p.kind || null;
-  /* 好友未分组按来源 scope 区分：通讯录=contacts，个人消息=msgp（默认） */
-  var scope = (kind === 'p') ? (p.scope || 'msgp') : null;
   var gs = kind === 'p' ? [] : Q.uncatGroups();
-  var ps = kind === 'g' ? [] : Q.uncatPeople(scope);
+  var ps = kind === 'g' ? [] : Q.uncatPeople();
   var total = gs.length + ps.length + (kind ? 0 : DB.data.miscUncat);
   var title = kind === 'p' ? '整理未分组好友' : kind === 'g' ? '整理未分组群聊' : '整理未分组';
 
@@ -227,10 +258,6 @@ SCREENS.tidy = function (p) {
 };
 
 SCREENS.tidy.after = function (root, p) {
-  p = p || {};
-  /* scope 必须取自入参 p（渲染函数里的局部 scope 在 after 闭包里不可见）；
-     否则通讯录整理会把人错归类到个人消息分组，或未定义变量导致点不动 */
-  var scope = (p.kind === 'p') ? (p.scope || 'msgp') : null;
   function refreshBtn() {
     var n = Object.keys(TIDY.sel).filter(function (k) { return TIDY.sel[k]; }).length;
     root.querySelector('.ab-n').innerHTML = '已选 <b>' + n + '</b> 项';
@@ -266,7 +293,7 @@ SCREENS.tidy.after = function (root, p) {
     var ids = Object.keys(TIDY.sel).filter(function (k) { return TIDY.sel[k]; });
     if (!ids.length) { H.toast('先勾选要整理的内容'); return; }
     H.haptic();
-    go('assign', { ids:ids.join(','), addTo:TIDY.addTo, scope: scope });
+    go('assign', { ids:ids.join(','), addTo:TIDY.addTo });
   };
 };
 
@@ -301,11 +328,7 @@ SCREENS.assign = function (p) {
   h += '<div class="grab"></div>';
   h += '<div class="sh-tt">移动到分组<span>已选 ' + n + ' 项</span></div>';
   h += '<div class="sh-body">';
-  DB.data.categories.filter(function (c) {
-    if (kind && c.kind !== kind) return false;
-    if (c.kind === 'p' && p.scope) return c.scope === p.scope;
-    return true;
-  }).forEach(function (c) {
+  DB.data.categories.filter(function (c) { return !kind || c.kind === kind; }).forEach(function (c) {
     h += '<div class="sh-r" data-sc="' + c.id + '">' + H.catIcon(c.id, '', 38) +
       '<div class="sh-n">' + H.esc(c.name) + '</div>' +
       '<div class="sh-c">' + Q.catTotal(c.id) + ' 项</div>' +
@@ -347,7 +370,7 @@ SCREENS.assign.after = function (root, p) {
     H.haptic();
     var name = prompt('新分组名称', '');
     if (!name || !name.trim()) return;
-    var nid = A.addCat(name.trim(), 'asc', kind, p.scope);
+    var nid = A.addCat(name.trim(), 'asc', kind);
     ids.forEach(function (k) {
       A.toggleCat(kind === 'g' ? 'group' : 'person', k.slice(2), nid, true);
     });
@@ -372,7 +395,7 @@ SCREENS.dragtidy = function () {
     '<span id="dzText">长按下方项目，拖到这里</span></div>';
 
   h += '<div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px" id="catChips">';
-  DB.data.categories.filter(function (c) { return c.kind === 'g' || c.scope === 'msgp'; }).forEach(function (c) {
+  DB.data.categories.forEach(function (c) {
     h += '<div data-chip="' + c.id + '" style="flex:none;display:flex;align-items:center;gap:7px;' +
       'padding:7px 13px;border-radius:99px;background:#fff;border:1px solid var(--sep);font-size:13.5px;' +
       'cursor:pointer;transition:all .15s"><span style="width:9px;height:9px;border-radius:50%;background:' +
@@ -387,7 +410,7 @@ SCREENS.dragtidy = function () {
       (g.note ? '<div class="sug">' + H.esc(g.note) + '</div>' : '') + '</div>' +
       '<div class="pv">' + H.esc(g.prev || '') + '</div></div></div>';
   });
-  var ps = Q.uncatPeople('msgp');
+  var ps = Q.uncatPeople();
   h += '<div class="sec">好友<span>' + (ps.length + DB.data.miscUncat) + ' 人</span></div>';
   ps.forEach(function (p2) {
     h += '<div class="row" data-dp="' + p2.id + '" style="touch-action:pan-y">' +
@@ -532,11 +555,7 @@ SCREENS.quickassign = function (p) {
     '<div class="sh-body">';
   var o = p.kind === 'group' ? Q.group(p.id) : Q.person(p.id);
   var curGid = p.kind === 'group' ? o.gid : o.pgid;
-  DB.data.categories.filter(function (c) {
-    if (c.kind !== kind) return false;
-    if (c.kind === 'p' && p.scope) return c.scope === p.scope;
-    return true;
-  }).forEach(function (c) {
+  DB.data.categories.filter(function (c) { return c.kind === kind; }).forEach(function (c) {
     var on = curGid === c.id;
     h += '<div class="sh-r" data-qc="' + c.id + '">' + H.catIcon(c.id, '', 38) +
       '<div class="sh-n">' + H.esc(c.name) + '</div>' +
@@ -561,7 +580,7 @@ SCREENS.quickassign.after = function (root, p) {
   var qout = root.querySelector('[data-qout]');
   if (qout) qout.onclick = function () {
     H.haptic();
-    A.toggleCat(p.kind, p.id, '', false, p.scope);
+    A.toggleCat(p.kind, p.id, '', false);
     H.toast('已移出分组');
     back();
     setTimeout(function () { render(true); }, 60);
@@ -571,7 +590,7 @@ SCREENS.quickassign.after = function (root, p) {
     H.haptic();
     var name = prompt('新分组名称', '');
     if (!name || !name.trim()) return;
-    var nid = A.addCat(name.trim(), 'asc', p.kind === 'group' ? 'g' : 'p', p.scope);
+    var nid = A.addCat(name.trim(), 'asc', p.kind === 'group' ? 'g' : 'p');
     A.toggleCat(p.kind, p.id, nid, true);
     H.toast('已新建「' + name.trim() + '」并移入');
     back();
@@ -582,13 +601,12 @@ SCREENS.quickassign.after = function (root, p) {
 /* ==========================================================
    20 新建分组（kind: p=好友分组 / g=群分组）
    ========================================================== */
-var NEWCAT = { icon: 'people', thenCats: '', kind: 'p', scope: 'msgp' };
+var NEWCAT = { icon: 'people', thenCats: '', kind: 'p' };
 SCREENS.newcat = function (p) {
   p = p || {};
   if (p.thenCats !== undefined) NEWCAT.thenCats = p.thenCats || '';
   if (p.icon) NEWCAT.icon = p.icon;
   if (p.kind) NEWCAT.kind = p.kind;
-  if (p.scope) NEWCAT.scope = p.scope;
   var isG = NEWCAT.kind === 'g';
   var h = navBar('新建' + (isG ? '群分组' : '好友分组'), { right:'<div class="nav-r"><span class="nav-act" data-create>创建</span></div>' });
   h += '<div class="body" style="background:var(--bg)">';
@@ -636,7 +654,7 @@ SCREENS.newcat.after = function (root, p) {
     var v = nameI.value.trim();
     if (!v) { H.toast('请先给分组起个名字'); nameI.focus(); return; }
     H.haptic();
-    var id = A.addCat(v, NEWCAT.icon, NEWCAT.kind, NEWCAT.scope);
+    var id = A.addCat(v, NEWCAT.icon, NEWCAT.kind);
     /* 来自「从分组里添加」的链路：把关联内容移入 */
     if (NEWCAT.thenCats) {
       var parts = NEWCAT.thenCats.split(':');
@@ -644,7 +662,7 @@ SCREENS.newcat.after = function (root, p) {
       if (parts[0] === 'person') A.toggleCat('person', parts[1], id, true);
       NEWCAT.thenCats = '';
     }
-    NEWCAT._tmpName = ''; NEWCAT.icon = 'people'; NEWCAT.kind = 'p'; NEWCAT.scope = 'msgp';
+    NEWCAT._tmpName = ''; NEWCAT.icon = 'people'; NEWCAT.kind = 'p';
     H.toast('已创建「' + v + '」');
     home();
   };

@@ -45,10 +45,10 @@ function seed() {
 
     /* 分组：kind = 'p' 好友分组 / 'g' 群分组，collapsed 记住折叠状态 */
     categories: [
-      { id:'p_best',   kind:'p', name:'特别关心', collapsed:false, scope:'msgp' },
-      { id:'p_family', kind:'p', name:'家人',     collapsed:false, scope:'msgp' },
-      { id:'p_school', kind:'p', name:'同学',     collapsed:false, scope:'msgp' },
-      { id:'p_work',   kind:'p', name:'同事',     collapsed:false, scope:'msgp' },
+      { id:'p_best',   kind:'p', name:'特别关心', collapsed:false },
+      { id:'p_family', kind:'p', name:'家人',     collapsed:false },
+      { id:'p_school', kind:'p', name:'同学',     collapsed:false },
+      { id:'p_work',   kind:'p', name:'同事',     collapsed:false },
       { id:'g_work',   kind:'g', name:'工作群',   collapsed:false },
       { id:'g_school', kind:'g', name:'同学群',   collapsed:false },
       { id:'g_family', kind:'g', name:'家人群',   collapsed:false },
@@ -139,8 +139,7 @@ function seed() {
     miscUncat: 21,   /* 未分组占位数量感 */
 
     settings: { showDirFirst:true, collapseOthers:true, multiCat:false, newToUncat:true,
-                msgMute:false, pinChat:true, saveContacts:true, msgTab:'p', contactSort:'pinyin',
-                upFolded:false, ugFolded:false }
+                msgMute:false, pinChat:true, saveContacts:true, msgTab:'p', contactSort:'pinyin' }
   };
 }
 
@@ -158,66 +157,31 @@ var DB = {
     if (!this.data.strangers) this.data.strangers = seed().strangers;
     if (!this.data.settings) this.data.settings = seed().settings;
     if (this.data.settings.contactSort === undefined) this.data.settings.contactSort = 'pinyin';
-    if (this.data.settings.upFolded === undefined) this.data.settings.upFolded = false;
-    if (this.data.settings.ugFolded === undefined) this.data.settings.ugFolded = false;
-    /* 旧版好友分组无 scope：默认归入个人消息体系；旧好友补 cpgid（通讯录初始全未分组） */
-    DB.data.categories.forEach(function (c) {
-      if (c.kind === 'p' && c.scope === undefined) c.scope = 'msgp';
-    });
-    DB.data.people.forEach(function (p) {
-      if (p.cpgid === undefined) p.cpgid = '';
-    });
-    /* 旧版群无 owner：成员数组里 '我' 表示自己，默认「我」为群主；admins 为管理员名单 */
-    DB.data.groups.forEach(function (g) {
-      if (!g.members) g.members = ['我'];
-      if (g.owner === undefined) g.owner = g.members.indexOf('我') >= 0 ? '我' : (g.members[0] || '');
-      if (!g.admins) g.admins = [];
-    });
     this.save();
     return this.data;
   },
   save: function () {
     try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) {}
   },
-  reset: function () {
-    this.data = seed();
-    /* 与 load 一致：补齐群主，保证测试/重置后数据规整 */
-    this.data.groups.forEach(function (g) {
-      if (g.owner === undefined) g.owner = g.members.indexOf('我') >= 0 ? '我' : (g.members[0] || '');
-      if (!g.admins) g.admins = [];
-    });
-    this.save();
-  }
+  reset: function () { this.data = seed(); this.save(); }
 };
 
 /* --------- 查询 --------- */
 var Q = {
   cat: function (id) { return DB.data.categories.filter(function (c) { return c.id === id; })[0]; },
-  /* 好友分组按 scope 区分：'msgp'=个人消息体系，'contacts'=通讯录体系；群分组 kind:'g' 无 scope */
-  catList: function (kind, scope) {
-    return DB.data.categories.filter(function (c) {
-      return c.kind === kind && (scope === undefined || c.scope === scope);
-    });
-  },
+  catList: function (kind) { return DB.data.categories.filter(function (c) { return c.kind === kind; }); },
   groupsOf: function (cid) { return DB.data.groups.filter(function (g) { return g.gid === cid; }); },
   peopleOf: function (cid) {
-    var c = Q.cat(cid);
-    if (!c) return [];
-    var fld = c.scope === 'contacts' ? 'cpgid' : 'pgid';
     return DB.data.people.filter(function (p) {
-      return p[fld] === cid && p.relation !== 'blocked';
+      return p.pgid === cid && p.relation !== 'blocked';
     });
   },
   uncatGroups: function () {
     return DB.data.groups.filter(function (g) { return !g.gid || !Q.cat(g.gid); });
   },
-  /* 未分组好友：scope='contacts' 看 cpgid，默认看 pgid（个人消息体系） */
-  uncatPeople: function (scope) {
-    scope = scope || 'msgp';
+  uncatPeople: function () {
     return DB.data.people.filter(function (p) {
-      if (p.relation === 'blocked') return false;
-      if (scope === 'contacts') return !p.cpgid || !Q.cat(p.cpgid);
-      return !p.pgid || !Q.cat(p.pgid);
+      return (!p.pgid || !Q.cat(p.pgid)) && p.relation !== 'blocked';
     });
   },
   /* 全部好友（不含拉黑） */
@@ -275,102 +239,25 @@ var Q = {
   person: function (id) { return DB.data.people.filter(function (p) { return p.id === id; })[0]; },
   chat: function (id) { if (!DB.data.chats[id]) DB.data.chats[id] = []; return DB.data.chats[id]; },
   onlineTxt: function (p) { return (p.online && ONLINE_TXT[p.online]) || '离线'; },
-  isOnline: function (p) { return p.online && p.online !== 'off'; },
-  /* 是否群主：成员数组里 '我' 表示自己；owner 缺省时按是否包含 '我' 判定 */
-  isOwner: function (g) {
-    if (!g) return false;
-    return g.owner !== undefined ? g.owner === '我' : (g.members || []).indexOf('我') >= 0;
-  },
-  /* 还没在群里的好友（「添加成员」候选，不含拉黑） */
-  groupCandidates: function (gid) {
-    var g = Q.group(gid); if (!g) return [];
-    return DB.data.people.filter(function (p) {
-      return p.relation !== 'blocked' && (g.members || []).indexOf(p.name) < 0;
-    });
-  },
-  /* 管理员名额上限：50 人以下 1 个，50～499 人 2 个，500 人及以上 3 个；群成员人数不设上限 */
-  maxAdmins: function (g) {
-    var n = (g && g.members ? g.members.length : 0);
-    return n >= 500 ? 3 : (n >= 50 ? 2 : 1);
-  },
-  /* 某人（默认「我」）是否该群管理员 */
-  isAdmin: function (g, name) {
-    if (!g) return false;
-    return (g.admins || []).indexOf(name === undefined ? '我' : name) >= 0;
-  },
-  /* 能否把 target 移出群：群主可踢任何他人；管理员只能踢普通成员 */
-  canKick: function (g, target) {
-    if (!g || target === '我' || target === g.owner) return false;
-    if (Q.isOwner(g)) return true;
-    if (Q.isAdmin(g, '我')) return (g.admins || []).indexOf(target) < 0;
-    return false;
-  }
+  isOnline: function (p) { return p.online && p.online !== 'off'; }
 };
 
 /* --------- 操作 --------- */
 var A = {
-  /* 归入/移出分组。好友分组按 scope 落到 pgid(个人消息) 或 cpgid(通讯录)；
-     cid 给定时优先用该分组的 scope；cid 为空（移出）时需显式传 scope */
-  toggleCat: function (kind, id, cid, on, scope) {
+  /* 单分组语义：归入 = 移动到该分组；移出 = 变为未分组 */
+  toggleCat: function (kind, id, cid, on) {
     var obj = kind === 'group' ? Q.group(id) : Q.person(id);
     if (!obj) return;
-    if (kind === 'group') {
-      obj.gid = on ? cid : '';
-    } else {
-      var fld = (scope === 'contacts') ? 'cpgid' : 'pgid';
-      if (cid) { var cc = Q.cat(cid); if (cc && cc.scope) fld = cc.scope === 'contacts' ? 'cpgid' : 'pgid'; }
-      obj[fld] = on ? cid : '';
-    }
-    DB.save();
-  },
-  /* 往群里加人（按姓名去重追加），返回实际新增数 */
-  addMembers: function (gid, names) {
-    var g = Q.group(gid); if (!g) return 0;
-    g.members = g.members || [];
-    var add = 0;
-    (names || []).forEach(function (n) {
-      if (n && g.members.indexOf(n) < 0) { g.members.push(n); add++; }
-    });
-    DB.save();
-    return add;
-  },
-  /* 把某人移出群；不能移出自己；若他是管理员同步撤销 */
-  removeMember: function (gid, name) {
-    var g = Q.group(gid); if (!g) return;
-    if (name === '我') return;
-    g.members = (g.members || []).filter(function (m) { return m !== name; });
-    if (g.admins) g.admins = g.admins.filter(function (m) { return m !== name; });
-    DB.save();
-  },
-  /* 群主修改群名 */
-  setGroupName: function (gid, name) {
-    var g = Q.group(gid); if (!g || !name) return false;
-    g.name = name; DB.save(); return true;
-  },
-  /* 设置/撤销管理员（仅群主可操作）。返回错误文案或 null */
-  toggleAdmin: function (gid, name, on) {
-    var g = Q.group(gid); if (!g) return '群不存在';
-    if (!Q.isOwner(g)) return '只有群主可以设置管理员';
-    if (name === '我' || name === g.owner) return '不能对群主设置管理员';
-    g.admins = g.admins || [];
-    var i = g.admins.indexOf(name);
-    if (on && i >= 0) return '该成员已是管理员';
-    if (!on && i < 0) return '该成员不是管理员';
     if (on) {
-      var cap = Q.maxAdmins(g);
-      if (g.admins.length >= cap) return g.members.length + ' 人群最多可设 ' + cap + ' 个管理员';
-      g.admins.push(name);
+      if (kind === 'group') obj.gid = cid; else obj.pgid = cid;
     } else {
-      g.admins.splice(i, 1);
+      if (kind === 'group') obj.gid = ''; else obj.pgid = '';
     }
     DB.save();
-    return null;
   },
-  addCat: function (name, icon, kind, scope) {
+  addCat: function (name, icon, kind) {
     var id = (kind === 'g' ? 'g_' : 'p_') + Date.now();
-    var c = { id:id, kind:kind || 'p', name:name, collapsed:false };
-    if (kind !== 'g') c.scope = scope || 'msgp';
-    DB.data.categories.push(c);
+    DB.data.categories.push({ id:id, kind:kind || 'p', name:name, collapsed:false });
     DB.save();
     return id;
   },
@@ -379,19 +266,14 @@ var A = {
     var c = Q.cat(cid); if (!c) return;
     DB.data.categories = DB.data.categories.filter(function (x) { return x.id !== cid; });
     if (c.kind === 'g') DB.data.groups.forEach(function (g) { if (g.gid === cid) g.gid = ''; });
-    else {
-      var fld = c.scope === 'contacts' ? 'cpgid' : 'pgid';
-      DB.data.people.forEach(function (p) { if (p[fld] === cid) p[fld] = ''; });
-    }
+    else DB.data.people.forEach(function (p) { if (p.pgid === cid) p.pgid = ''; });
     DB.save();
   },
   moveCat: function (cid, dir) {
     var arr = DB.data.categories;
     var c = Q.cat(cid); if (!c) return;
     var same = [];
-    arr.forEach(function (x, i) {
-      if (x.kind === c.kind && (c.kind === 'g' || x.scope === c.scope)) same.push(i);
-    });
+    arr.forEach(function (x, i) { if (x.kind === c.kind) same.push(i); });
     var pos = same.indexOf(arr.indexOf(c));
     var npos = pos + dir;
     if (npos < 0 || npos >= same.length) return;
@@ -447,7 +329,7 @@ var A = {
   },
   addPerson: function (name, pgid) {
     var id = 'p_' + Date.now();
-    DB.data.people.push({ id:id, name:name, pgid:pgid || '', cpgid:'', av:AV.grey,
+    DB.data.people.push({ id:id, name:name, pgid:pgid || '', av:AV.grey,
       online:'online', mood:'', remark:'', prev:'', t:'', unread:0 });
     DB.save();
     return id;
@@ -458,7 +340,7 @@ var A = {
   addFriend: function (sid) {
     var s = Q.stranger(sid); if (!s) return null;
     var id = 'p_' + Date.now();
-    DB.data.people.push({ id:id, name:s.name, pgid:'', cpgid:'', av:s.av || AV.grey,
+    DB.data.people.push({ id:id, name:s.name, pgid:'', av:s.av || AV.grey,
       online:'online', mood:'', remark:'', prev:s.msg || '', t:s.t || '', unread:0 });
     DB.data.strangers = DB.data.strangers.filter(function (x) { return x.id !== sid; });
     DB.save();
@@ -473,7 +355,7 @@ var A = {
   /* 拉黑陌生人 */
   blockStranger: function (sid) {
     var s = Q.stranger(sid); if (!s) return;
-    DB.data.people.push({ id:'p_' + Date.now(), name:s.name, pgid:'', cpgid:'', av:s.av || AV.grey,
+    DB.data.people.push({ id:'p_' + Date.now(), name:s.name, pgid:'', av:s.av || AV.grey,
       online:'off', mood:'', remark:'', prev:s.msg || '', t:s.t || '', unread:0,
       relation:'blocked', blockedFrom:'stranger' });
     this.delStranger(sid);
